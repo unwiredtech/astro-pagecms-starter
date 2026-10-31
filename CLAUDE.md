@@ -84,8 +84,40 @@ The host must send these headers (a `<meta>` CSP can't block framing): `Strict-T
 `X-Content-Type-Options: nosniff`, `Content-Security-Policy: frame-ancestors 'none'` site-wide (a stricter header CSP would block the hashed inline scripts and view-transition styles), plus `Content-Security-Policy: default-src 'none'; img-src 'self'; sandbox` on `/media/*` only,
 `Referrer-Policy: strict-origin-when-cross-origin`. HTTPS only, TLS 1.2 or later.
 
+## Code rules
+
+- **Keep code clean and easy for a person to trace.** Clear names, small functions, plain
+  control flow. No clever one-liners, deep nesting or hidden indirection.
+- **Never remove an existing feature.** Every change keeps everything that already works working.
+- **No deletions without the main dev knowing.** Before deleting a function, file or feature:
+  say what and why, find everything that uses it, and wait for approval. After an approved
+  deletion, run `npm run verify` and report the result. Never delete code silently as part of
+  another change.
+- **Every function handles its errors.** Catch failures where they can happen (network, file,
+  parsing, user or CMS input) and either recover or pass a clear error up. No empty `catch`
+  blocks, no swallowed errors.
+- **Never expose a database from the frontend.** No credentials, connection strings or
+  service keys in client code. Data goes through a backend API, or a client protected by
+  row-level security rules.
+- **Follow the project's ESLint and Prettier setup** (`npm run check`). Encryption, if ever
+  needed: TLS 1.2+, AES-256-GCM, Argon2id or bcrypt, vetted libraries only.
+
+## Knowledge graph (graphify)
+
+This project keeps a [graphify](https://github.com/safishamsi/graphify) graph in `graphify-out/`
+(gitignored, because it stores local paths).
+
+- No `graphify-out/` yet (fresh clone): build it with `/graphify .` once the first page works.
+- Before answering questions about the code, query the graph if it exists.
+- After changing code, update it with `/graphify . --update`.
+- If graphify isn't installed, skip these steps and say so.
+
 ## Done means
 
-`npm run verify` passes, the page was checked in a browser (including reduced motion and a
-client-side navigation away and back), `bug-tester` and `security-reviewer` agents pass,
-and the graph is updated with `/graphify . --update`.
+1. `npm run verify` passes (type check, lint, format, unit tests, build).
+2. The page was checked in a browser, including reduced motion and a client-side navigation
+   away and back.
+3. A bug review and a security review ran in a separate context from the code's author, and
+   both pass with no open critical or high findings. Use the `bug-tester` and
+   `security-reviewer` agents if they exist, otherwise any fresh-context reviewer.
+4. The graph is updated (`/graphify . --update`).
