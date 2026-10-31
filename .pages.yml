@@ -1,0 +1,57 @@
+# PageCMS config: https://pagescms.org/docs/configuration/
+# Field names must match the Zod schema in src/content.config.ts.
+media:
+  input: public/media
+  output: /media
+  # Images only: an uploaded .svg or .html would run scripts on the site's own domain.
+  extensions: [jpg, jpeg, png, webp, avif, gif]
+
+content:
+  - name: pages
+    label: Pages
+    type: collection
+    path: src/content/pages
+    format: yaml-frontmatter
+    # File name becomes the URL: "The Method" -> the-method.md -> /the-method/ (default adds a date).
+    filename:
+      template: '{primary}.md'
+      field: create
+    view:
+      fields: [title]
+    fields:
+      - { name: title, label: Title, type: string, required: true }
+      - { name: description, label: SEO description, type: text }
+      - name: sections
+        label: Sections
+        type: object
+        list: true
+        fields:
+          - { name: heading, label: Heading, type: string }
+          - { name: text, label: Text, type: text }
+          - { name: image, label: Image, type: image }
+          - {
+              name: imageAlt,
+              label: Image alt text (required with an image; "decorative" if it adds no meaning),
+              type: string,
+            }
+      - { name: body, label: Body, type: rich-text }
+
+  - name: site
+    label: Site settings
+    type: file
+    path: src/data/site.json
+    format: json
+    fields:
+      - { name: name, label: Site name, type: string, required: true }
+      - name: nav
+        label: Navigation
+        type: object
+        list: true
+        fields:
+          - { name: label, label: Label, type: string, required: true }
+          - {
+              name: href,
+              label: 'Link (/page/, https://… or mailto:)',
+              type: string,
+              required: true,
+            }

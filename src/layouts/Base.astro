@@ -1,0 +1,82 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import { site } from '../data/site';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const pageTitle = title === site.name ? title : `${title} | ${site.name}`;
+const currentPath = Astro.url.pathname;
+const isNotFound = Astro.url.pathname.startsWith('/404');
+
+// Editors may type "/about" or "/about/"; compare both without the trailing slash.
+function withoutTrailingSlash(path: string): string {
+  return path.length > 1 ? path.replace(/\/$/, '') : path;
+}
+
+function isCurrent(href: string): boolean {
+  return withoutTrailingSlash(href) === withoutTrailingSlash(currentPath);
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{pageTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {!isNotFound && <link rel="canonical" href={new URL(currentPath, Astro.site)} />}
+    <ClientRouter />
+    <script is:inline>
+      // Runs before paint so [data-reveal] content is hidden only when it will be animated in.
+      let effectsMissing = false;
+      function markMotion() {
+        if (effectsMissing) return;
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.dataset.motion = 'on';
+        }
+      }
+      markMotion();
+      document.addEventListener('astro:after-swap', markMotion);
+      // If the effects bundle never loads (blocked, offline, CSP), show hidden content anyway.
+      setTimeout(function showContentIfEffectsMissing() {
+        if (window.__effectsLoaded) return;
+        effectsMissing = true;
+        delete document.documentElement.dataset.motion;
+      }, 3000);
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
+    <header class="site-header">
+      <a href="/" class="logo">
+        {site.name}
+      </a>
+      <nav aria-label="Main">
+        <ul>
+          {site.nav.map((item) => (
+            <li>
+              <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </header>
+    <main id="main" transition:animate="fade">
+      <slot />
+    </main>
+    <script>
+      import '../scripts/effects.ts';
+    </script>
+  </body>
+</html>
